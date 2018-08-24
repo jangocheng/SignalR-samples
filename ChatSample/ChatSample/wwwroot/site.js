@@ -18,18 +18,33 @@ document.addEventListener('DOMContentLoaded', function () {
     messageInput.focus();
 
     // Do SignalR things!
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/chat", signalR.HttpTransportType.LongPolling)
+        .build();
 
-    // Create a function that the hub can call to broadcast messages.
-    connection.on('broadcastMessage', function (name, message) {
+    // Define the "ReceiveMessage" method
+    connection.on("ReceiveMessage", (sender, message) => {
+        addMessage(sender, message);
     });
 
     // On click handler for the "send" button
     document.getElementById('sendmessage').addEventListener('click', function (event) {
         // Send the message somehow?
+        connection.invoke("SendMessageAsync", name, messageInput.value);
 
         // Clear text box and reset focus for next comment.
         messageInput.value = '';
         messageInput.focus();
         event.preventDefault();
     });
+
+    // Start the connection
+    connection.start()
+        .then(() => {
+            document.getElementById("message").disabled = false;
+            document.getElementById("sendmessage").disabled = false;
+        })
+        .catch((e) => {
+            addMessage("<error>", e.toString())
+        });
 });
